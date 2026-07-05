@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: todolist-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: todolist_db
+      POSTGRES_USER: todolist_user
+      POSTGRES_PASSWORD: todolist_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todolist_user -d todolist_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+    container_name: todolist-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: todolist_db
+      DB_USERNAME: todolist_user
+      DB_PASSWORD: todolist_pass
+      JWT_SECRET: c3J0LXRvZG9saXN0LWRlbW8tc2VjcmV0LWtleS1jaGFuZ2UtbWUtaW4tcHJvZHVjdGlvbi0xMjM0NTY3ODk=
+      JWT_EXPIRATION_MS: 86400000
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
